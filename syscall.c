@@ -146,10 +146,9 @@ extern int sys_show(void);
 extern int sys_gettime(void);
 extern int sys_isatty(void);
 extern int sys_lseek(void);
-
-// signal framework
-extern int sys_signal(void);
-extern int sys_sigsend(void);
+// scheduling
+extern int sys_cps(void);
+extern int sys_chpr(void);
 
 
 static int (*syscalls[])(void) = {
@@ -199,9 +198,9 @@ static int (*syscalls[])(void) = {
 [SYS_lseek]   sys_lseek,
 [SYS_getsharedpages] sys_getsharedpages,
 [SYS_showproc] sys_showproc,
-// signal framework
-[SYS_signal] sys_signal,
-[SYS_sigsend] sys_sigsend
+// scheduling
+[SYS_cps]     sys_cps,
+[SYS_chpr]    sys_chpr
 };
 
 void
