@@ -636,6 +636,95 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+
+      // process scheduling
+      switch(SCHED_TYPE) {          
+        case SCHED_RR:
+          break;
+
+        case SCHED_FIFO:
+          mint = 0xffffff; // max uint value
+          sched_proc = ptable.proc;
+          for(p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++){
+            if(p2->state != RUNNABLE)
+              continue;
+            if (p2->in_time < mint)
+              sched_proc = p2;
+              mint = p2->in_time;
+          }
+          p = sched_proc;
+          break;
+
+        case SCHED_PRIORITY:
+          sched_proc = p;
+
+          // choose a proc with high priority (low proc->priority value)
+          for(p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++){
+            if(p2->state != RUNNABLE)
+              continue;
+            if (p2->priority < sched_proc->priority)
+              sched_proc = p2;
+          }
+          p = sched_proc;
+          break;
+
+        // Multi-Level Feedback Queue
+        // | priority | mlq level | time quantum (CPU clock) |
+        // | 0-4      | 1         | 10                       |
+        // | 5-9      | 2         | 20                       |
+        // | 10-14    | 3         | 30                       |
+        // | 15-20    | 4         | 40                       |
+        // Go over lower level queue first. Every queue uses RR scheduling,
+        // but time quantum(slice) is not same. A process can be executed during 
+        // mlq_level * 10 CPU clocks. After a execution if the process' work is not over, 
+        // then priority +1 and go back to ready queue.
+        case SCHED_MLQ:
+          flag = 0;
+          for (p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++) { // 1Level priority process
+            if (p2->state == RUNNABLE && p2->priority < 5){
+              p2->priority += 1;
+              p2->mlq_level = 1;
+              p = p2;
+              flag = 1;
+              break;
+            }
+          }
+          if (flag) break;
+
+          for (p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++) { // 2Level priority process
+            if (p2->state == RUNNABLE && p2->priority >= 5 && p2->priority < 10) {
+              p2->priority += 1;
+              p2->mlq_level = 2;
+              p = p2;
+              flag = 1;
+              break;
+            }
+          }
+          if (flag) break;
+
+          for (p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++) { // 3Level priority process
+            if (p2->state == RUNNABLE && p2->priority >= 10 && p2->priority < 15) {
+              p2->priority += 1;
+              p2->mlq_level = 3;
+              p = p2;
+              flag = 1;
+              break;
+            }
+          }
+          if (flag) break;
+
+          for (p2 = p; p2 < &ptable.proc[NPROC]; p2++) { // 4Level priority process
+            if (p2->state == RUNNABLE) {
+              p2->mlq_level = 4;
+              p = p2;
+              break;
+            }
+          }
+          break;
+
+        default:  // default is RR
+          break;
+      }
     
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -643,6 +732,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+			if(ticks%100 == 0) 
+      	cprintf("DEBUG: RUNNING %s [%d] %d\n", p->name, p->pid, p->priority);
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
