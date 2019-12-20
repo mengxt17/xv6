@@ -48,9 +48,9 @@
 #define SYS_getsharedpages 50
 #define SYS_showproc 51
 
-// signal framework
-#define SYS_signal 52
-#define SYS_sigsend 53
+// scheduling
+#define SYS_cps    54
+#define SYS_chpr   55
 
 // Error results
 #define EPERM		 -1		/* Operation not permitted */

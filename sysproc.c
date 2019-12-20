@@ -276,21 +276,22 @@ sys_showproc(void)
   showproc();
 }
 
-// signal framework
-int sys_signal(void)
+// scheduling
+
+int
+sys_cps(void)
 {
-  int signum;
-  int handler = 0;
-  if (argint(0, &signum) < 0 || argint(1, &handler) < 0)
-    return -1;
-  return signal(signum, (sighandler_t)handler);
+  return cps();
 }
 
-int sys_sigsend(void)
+int
+sys_chpr(void)
 {
-  int pid;
-  int signum;
-  if (argint(0, &pid) < 0 || argint(1, &signum) < 0)
+  int pid, pr;
+  if(argint(0, &pid) < 0)
     return -1;
-  return sigsend(pid, signum);
+  if(argint(1, &pr) < 0)
+    return -1;
+
+  return chpr(pid, pr);
 }

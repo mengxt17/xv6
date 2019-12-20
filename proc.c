@@ -302,6 +302,10 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
 
+  // scheduling
+  p->tick = 0;
+  p->priority = 5; // Default priority
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -345,8 +349,6 @@ found:
   {
     p->sig_permit[k] = 0;
   }
-  p->signal = 0;
-  memset(p->sighandlers, 0, 32);
   return p;
 }
 
@@ -386,6 +388,11 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  // scheduling
+  p->in_time = ticks;
+
+  // set schedule type
+  SCHED_TYPE = SCHED_RR;
 
   release(&ptable.lock);
 }
@@ -441,7 +448,6 @@ fork(void)
   np->parent = curproc;
   np->stack_size = curproc->stack_size;
   *np->tf = *curproc->tf;
-  memcpy(np->sighandlers, curproc->sighandlers, 32);
 
   // Copy data for swapping.
   np->num_mem_entries = curproc->num_mem_entries;
@@ -483,6 +489,12 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  // scheduling
+  np->in_time = ticks; // FIFO: time that state is changed into RUNNABLE
+  
+  // change sh proc's priority to 3
+  if(np->name[0] == 's' && np->name[1] == 'h')
+    np->priority = 3;
 
   release(&ptable.lock);
 
@@ -530,9 +542,6 @@ exit(void)
   end_op();
   curproc->cwd = 0;
   memset(curproc->cwdname,0,1000*4);
-
-  //send signal
-  sigsend(curproc->parent->pid, SIGCHILDEXIT);
 
   acquire(&ptable.lock);
 
@@ -609,8 +618,12 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  // scheduling
+  struct proc *p = ptable.proc;
+  struct proc *p2, *sched_proc;  // for scheduling
   struct cpu *c = mycpu();
+  int mint = 0; // for FIFO scheduling
+  int flag;     // for MLQ scheduling
   c->proc = 0;
   
   for(;;){
@@ -619,6 +632,7 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
@@ -628,40 +642,6 @@ scheduler(void)
       // before jumping back to us.
       c->proc = p;
       switchuvm(p);
-
-      //signal framework.Register handlers
-      if (p->signal != 0) {
-        uint mask = (1 << 31);
-        sighandler_t *handler =  &p->sighandlers[31];
-
-        while (mask > 4) {
-          if ((p->signal & mask) && (*handler != 0))
-            register_handler(*handler);
-            mask >>= 1;
-            handler--;
-        }
-        while (mask > 0)
-        {
-          if (p->signal & mask) {
-            if (*handler == 0) {
-              switch (mask) {
-                case 4:sigchildexit();break;
-                case 2:sigkillchild();break;
-                case 1:sigint();break;
-                default:break;
-              }
-            } else register_handler(*handler);
-          }
-
-          mask >>= 1;
-          handler--;
-        }
-        p->signal = 0;
-      }
-      
-      
-
-
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
@@ -708,6 +688,8 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  // scheduling
+  myproc()->in_time = ticks;
   sched();
   release(&ptable.lock);
 }
@@ -781,8 +763,11 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      // scheduling
+      p->in_time = ticks;
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -807,8 +792,11 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING){
         p->state = RUNNABLE;
+        // scheduling
+        p->in_time = ticks;
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -934,6 +922,51 @@ getprocinfo(int *pid, char (*name)[16], int *state, uint *sz)
   return 0;
 }
 
+// scheduling
+// Current process status
+int
+cps(void)
+{
+  struct proc *p;
+
+  // Enable interrupts on this processor.
+  sti();
+
+  // Loop over process table looking for process to run.
+  acquire(&ptable.lock);
+  cprintf("name |\t pid |\t state |\t priority \n");
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->state == RUNNING)
+      cprintf("%s \t %d \t RUNNING \t %d \t \n", p->name, p->pid, p->priority);
+    else if (p->state == RUNNABLE)
+      cprintf("%s \t %d \t RUNNABLE \t %d \t \n", p->name, p->pid, p->priority);
+    else if (p->state == SLEEPING)
+      cprintf("%s \t %d \t SLEEPING \t %d \t \n", p->name, p->pid, p->priority);
+  }
+
+  release(&ptable.lock);
+
+  return 24;
+}
+
+// Change priority
+int
+chpr(int pid, int priority)
+{
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->pid == pid) {
+      p->priority = priority;
+      break;
+    }
+  }
+  release(&ptable.lock);
+
+  return pid;
+}
+
 
 void
 showproc(void)
@@ -948,81 +981,4 @@ showproc(void)
       cprintf("%s\t%d\t%d\n",p->name,p->sz,p->stack_size);
     }
   }
-}
-
-//signal framework
-// register a signal handler
-void register_handler(sighandler_t handler) 
-{
-  struct proc *curproc = myproc();
-  char* addr = uva2ka(curproc->pgdir, (char*)curproc->tf->esp);
-  if ((curproc->tf->esp & 0xFFF) == 0)
-    panic("esp_offset == 0");
-  
-  // open a new frame 
-  *(int*)(addr + ((curproc->tf->esp - 4) & 0xFFF)) = curproc->tf->eip;
-  curproc->tf->esp -= 4;
-  curproc->tf->eip = (uint)handler;
-}
-
-void sigint() 
-{
-  struct proc *curproc = myproc();
-  curproc->killed = 1;
-}
-
-void sigkillchild()
-{
-  struct proc *p;
-  struct proc *curproc = myproc();
-  cprintf("IN SIGKILLCHILD %d\n", curproc->pid);
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-    if (p->state == UNUSED)
-      continue;
-    if (p->parent->pid == curproc->pid) {
-      cprintf("I'm a child %d", p->pid);
-      sigsend(p->pid, SIGINT);
-    }
-  }
-}
-
-void sigchildexit() {
-  struct proc *curproc = myproc();
-  cprintf("SIGCHILDEXIT (one of my child terminated) %d\n", curproc->pid);
-}
-
-void killcurproc(void)
-{
-  struct proc *p;
-  cprintf("IN KILLCURPROC\n");
-
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-    if (p->state == UNUSED)
-    continue;
-    if((p != initproc) && (p->pid != 2)) {
-      cprintf("IN KILLCURPROC LOOP %D\n", p->pid);
-      sigsend(p->pid, SIGKILLCHILD);
-      sigsend(p->pid, SIGINT);
-      break;
-    }
-  }
-}
-
-int signal(int signum, sighandler_t handler)
-{
-  struct proc *curproc = myproc();
-  curproc->sighandlers[signum] = handler;
-  return 0;
-}
-
-int sigsend(int pid, int signum)
-{
-  struct proc *p;
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-    if (p->pid == pid) {
-      p->signal |= (1 << signum);
-      return 0;
-    }
-  }
-  return -1;
 }
