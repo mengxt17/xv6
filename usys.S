@@ -53,9 +53,6 @@ SYSCALL(show)
 SYSCALL(gettime)
 SYSCALL(getsharedpages)
 SYSCALL(showproc)
-// signal framework
-SYSCALL(signal)
-SYSCALL(sigsend)
 // scheduling
 SYSCALL(cps)
 SYSCALL(chpr)
