@@ -107,13 +107,6 @@ struct proc {
   char cwdname[100];           // Current directory
   char name[16];               // Process name (debugging)
 
-  // scheduling
-  int priority;                // Process Priority(0-20). Lower value, higher priority
-  uint in_time;                // Time that the process entered the ready queue (RUNNABLE state)
-  int tick;                    // Count the process used how many CPU time (interrupt timer time)
-                               // For the purpose of FIFO and MLQ scheduling 
-  int mlq_level;               // MLQ queue level
-
   // Now the stack is growing from top to bottom,
   // and the heap is growing from bottom to top (Both expandable).
 
@@ -134,10 +127,16 @@ struct proc {
   struct swapstab_page *swapstab_tail;
 
   int sig_permit[MAX_SIG_PER_PROC];// sigs this proc has access to
+
+  // signal framework
+  uint signal;
+  sighandler_t sighandlers[32];
 };
-// scheduling
-#define SCHED_RR        1
-#define SCHED_FIFO      2
-#define SCHED_PRIORITY  3
-#define SCHED_MLQ       4
-int SCHED_TYPE;
+
+// signal framework
+void register_handler(sighandler_t handler);
+void sigint();
+void sigkillchild();
+void sigchildexit();
+
+void* memcpy(void *dst, const void *src, uint n);
