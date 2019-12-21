@@ -26,10 +26,6 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-
-// scheduling
-int cps(void);
-int chpr(int pid, int pr);
 int reparent(int,int);
 void jobs (void);
 int getstate(int);
@@ -57,6 +53,10 @@ int show(char*);
 int gettime(struct rtcdate*);
 int isatty(int fd);
 int lseek(int fd, int ptr, int dir);
+
+// signal framework
+int signal(int signum, sighandler_t handler);
+int sigsend(int pid, int signum);
 
 // ulib.c
 int stat(char*, struct stat*);

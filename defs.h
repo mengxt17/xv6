@@ -148,11 +148,9 @@ void            swaptableinit(void);
 int             swapstab_growpage(struct proc *pr);
 void            memstab_clear(struct proc*);
 void            swapstab_clear(struct proc*);
-
-// scheduling
-int             cps(void);
-int             chpr(int pid, int pr);
-
+int             signal(int signum, sighandler_t register_handler);
+int             sigsend(int pid, int signum);
+void            killcurproc(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -237,3 +235,8 @@ int             loaduvm_from_kernel(pde_t *, char *, char *, char *, uint, uint)
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+// signal macros
+#define SIGINT              0
+#define SIGKILLCHILD        1
+#define SIGCHILDEXIT        2
