@@ -234,6 +234,7 @@ UPROGS=\
 	_ps\
 	_foo\
 	_chpr\
+	_sigtest\
 
 LUA_SCRIPTS=testmath.lua testos.lua testio.lua testtable.lua
 
@@ -310,7 +311,7 @@ EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
 	printf.c umalloc.c cowtest.c lalloctest.c npptest.c sagtest.c\
-	pgswptest.c shmtest.c vmstat.c\
+	pgswptest.c shmtest.c vmstat.c sigtest.c\
 	printf.c umalloc.c mv.c touch.c cp.c head.c tail.c splice.c\
 	jobs.c autowriter.c recorder.c hello.c\
 	history.c shutdown.c delete.c refresh.c showdeled.c\

@@ -54,4 +54,11 @@ SYSCALL(gettime)
 SYSCALL(getsharedpages)
 SYSCALL(showproc)
 SYSCALL(signal)
+<<<<<<< Updated upstream
 SYSCALL(sigsend)
+=======
+SYSCALL(sigsend)
+// scheduling
+SYSCALL(cps)
+SYSCALL(chpr)
+>>>>>>> Stashed changes

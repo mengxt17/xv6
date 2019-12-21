@@ -292,5 +292,27 @@ int sys_sigsend(void)
   int signum;
   if (argint(0, &pid) < 0 || argint(1, &signum) < 0)
     return -1;
+<<<<<<< Updated upstream
+=======
+
+  return chpr(pid, pr);
+}
+// signal framework
+int sys_signal(void)
+{
+  int signum;
+  int handler = 0;
+  if (argint(0, &signum) < 0 || argint(1, &handler) < 0)
+    return -1;
+  return signal(signum, (sighandler_t)handler);
+}
+
+int sys_sigsend(void)
+{
+  int pid;
+  int signum;
+  if (argint(0, &pid) < 0 || argint(1, &signum) < 0)
+    return -1;
+>>>>>>> Stashed changes
   return sigsend(pid, signum);
 }

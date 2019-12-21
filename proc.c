@@ -533,7 +533,11 @@ exit(void)
 
   //send signal
   sigsend(curproc->parent->pid, SIGCHILDEXIT);
+<<<<<<< Updated upstream
 
+=======
+  
+>>>>>>> Stashed changes
   acquire(&ptable.lock);
 
   // Parent might be sleeping in wait().
@@ -628,8 +632,13 @@ scheduler(void)
       // before jumping back to us.
       c->proc = p;
       switchuvm(p);
+<<<<<<< Updated upstream
 
       //signal framework.Register handlers
+=======
+	  
+	  //signal framework.Register handlers
+>>>>>>> Stashed changes
       if (p->signal != 0) {
         uint mask = (1 << 31);
         sighandler_t *handler =  &p->sighandlers[31];
@@ -658,10 +667,14 @@ scheduler(void)
         }
         p->signal = 0;
       }
+<<<<<<< Updated upstream
       
       
 
 
+=======
+	  
+>>>>>>> Stashed changes
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
@@ -1024,5 +1037,86 @@ int sigsend(int pid, int signum)
       return 0;
     }
   }
+<<<<<<< Updated upstream
   return -1;
 }
+=======
+}
+
+//signal framework
+// register a signal handler
+void register_handler(sighandler_t handler) 
+{
+  struct proc *curproc = myproc();
+  char* addr = uva2ka(curproc->pgdir, (char*)curproc->tf->esp);
+  if ((curproc->tf->esp & 0xFFF) == 0)
+    panic("esp_offset == 0");
+  
+  // open a new frame 
+  *(int*)(addr + ((curproc->tf->esp - 4) & 0xFFF)) = curproc->tf->eip;
+  curproc->tf->esp -= 4;
+  curproc->tf->eip = (uint)handler;
+}
+
+void sigint() 
+{
+  struct proc *curproc = myproc();
+  curproc->killed = 1;
+}
+
+void sigkillchild()
+{
+  struct proc *p;
+  struct proc *curproc = myproc();
+  cprintf("IN SIGKILLCHILD %d\n", curproc->pid);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->state == UNUSED)
+      continue;
+    if (p->parent->pid == curproc->pid) {
+      cprintf("I'm a child %d", p->pid);
+      sigsend(p->pid, SIGINT);
+    }
+  }
+}
+
+void sigchildexit() {
+  struct proc *curproc = myproc();
+  cprintf("SIGCHILDEXIT (one of my child terminated) %d\n", curproc->pid);
+}
+
+void killcurproc(void)
+{
+  struct proc *p;
+  cprintf("IN KILLCURPROC\n");
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->state == UNUSED)
+    continue;
+    if((p != initproc) && (p->pid != 2)) {
+      cprintf("IN KILLCURPROC LOOP %D\n", p->pid);
+      sigsend(p->pid, SIGKILLCHILD);
+      sigsend(p->pid, SIGINT);
+      break;
+    }
+  }
+}
+
+int signal(int signum, sighandler_t handler)
+{
+  struct proc *curproc = myproc();
+  curproc->sighandlers[signum] = handler;
+  return 0;
+}
+
+int sigsend(int pid, int signum)
+{
+  struct proc *p;
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->pid == pid) {
+      p->signal |= (1 << signum);
+      return 0;
+    }
+  }
+  return -1;
+}
+>>>>>>> Stashed changes

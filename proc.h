@@ -127,16 +127,32 @@ struct proc {
   struct swapstab_page *swapstab_tail;
 
   int sig_permit[MAX_SIG_PER_PROC];// sigs this proc has access to
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
   // signal framework
   uint signal;
   sighandler_t sighandlers[32];
 };
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 // signal framework
 void register_handler(sighandler_t handler);
 void sigint();
 void sigkillchild();
 void sigchildexit();
 
+<<<<<<< Updated upstream
 void* memcpy(void *dst, const void *src, uint n);
+=======
+void* memcpy(void *dst, const void *src, uint n);
+// scheduling
+#define SCHED_RR        1
+#define SCHED_FIFO      2
+#define SCHED_PRIORITY  3
+#define SCHED_MLQ       4
+int SCHED_TYPE;
+>>>>>>> Stashed changes

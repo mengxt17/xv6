@@ -67,6 +67,9 @@ int jobs_readline(int fd, char* line, int n);
 int partition(char *src, char *par, int pos);
 char getc_from_stdin(void);
 
+// signal framework
+int signal(int signum, sighandler_t handler);
+int sigsend(int pid, int signum);
 #include <stdlib.h>
 #include <string.h>
 

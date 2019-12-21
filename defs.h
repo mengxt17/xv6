@@ -150,7 +150,15 @@ void            memstab_clear(struct proc*);
 void            swapstab_clear(struct proc*);
 int             signal(int signum, sighandler_t register_handler);
 int             sigsend(int pid, int signum);
+<<<<<<< Updated upstream
 void            killcurproc(void);
+=======
+
+// scheduling
+int             cps(void);
+int             chpr(int pid, int pr);
+
+>>>>>>> Stashed changes
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -235,7 +243,10 @@ int             loaduvm_from_kernel(pde_t *, char *, char *, char *, uint, uint)
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 // signal macros
 #define SIGINT              0
 #define SIGKILLCHILD        1

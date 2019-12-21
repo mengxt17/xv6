@@ -146,7 +146,13 @@ extern int sys_show(void);
 extern int sys_gettime(void);
 extern int sys_isatty(void);
 extern int sys_lseek(void);
+<<<<<<< Updated upstream
 
+=======
+// scheduling
+extern int sys_cps(void);
+extern int sys_chpr(void);
+>>>>>>> Stashed changes
 // signal framework
 extern int sys_signal(void);
 extern int sys_sigsend(void);
@@ -201,7 +207,14 @@ static int (*syscalls[])(void) = {
 [SYS_showproc] sys_showproc,
 // signal framework
 [SYS_signal] sys_signal,
+<<<<<<< Updated upstream
 [SYS_sigsend] sys_sigsend
+=======
+[SYS_sigsend] sys_sigsend,
+// scheduling
+[SYS_cps]     sys_cps,
+[SYS_chpr]    sys_chpr
+>>>>>>> Stashed changes
 };
 
 void

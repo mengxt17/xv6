@@ -48,9 +48,18 @@
 #define SYS_getsharedpages 50
 #define SYS_showproc 51
 
+<<<<<<< Updated upstream
 // signal framework
 #define SYS_signal 52
 #define SYS_sigsend 53
+=======
+// scheduling
+#define SYS_cps    54
+#define SYS_chpr   55
+// signal framework
+#define SYS_signal 56
+#define SYS_sigsend 57
+>>>>>>> Stashed changes
 
 // Error results
 #define EPERM		 -1		/* Operation not permitted */
